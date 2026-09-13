@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import type {
   AdapterContext,
   DurableMemoryScope,
@@ -7,6 +8,7 @@ import type {
   SemanticMemoryResult,
   SemanticMemorySaveRequest,
 } from "@rakazo/adapter-kit";
+import { isPrivateAddress } from "./network-address.js";
 import {
   deleteSupermemoryContainer,
   parseSupermemoryBaseUrl,
@@ -23,15 +25,20 @@ export function supermemoryRequiresDeploymentOwner(settings: Record<string, stri
   return settings.mode === "local";
 }
 
-function isLoopbackBaseUrl(url: string): boolean {
+/**
+ * Local mode is already restricted to the deployment owner (see
+ * supermemoryRequiresDeploymentOwner), so this only needs to keep it off the public internet.
+ * A hostname can't be checked without a DNS lookup, which this synchronous path doesn't do, so
+ * only "localhost" and literal IPs are accepted — a compose sidecar gets a static, private
+ * ipv4_address instead of a service-name hostname.
+ */
+function isAllowedLocalModeBaseUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return (
-      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
-      (parsed.hostname === "localhost" ||
-        parsed.hostname === "127.0.0.1" ||
-        parsed.hostname === "[::1]")
-    );
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.replace(/^\[|\]$/g, "");
+    if (host === "localhost") return true;
+    return isIP(host) !== 0 && isPrivateAddress(host);
   } catch {
     return false;
   }
@@ -55,8 +62,11 @@ function parseSupermemoryConnection(
   if (apiKey.length < 8) throw new Error("apiKey must contain at least 8 characters");
   const baseUrl =
     mode === "cloud" ? SUPERMEMORY_CLOUD_BASE_URL : requiredValue(settings, "baseUrl");
-  if (mode === "local" && !isLoopbackBaseUrl(baseUrl)) {
-    throw new Error("Local mode requires a loopback address (localhost, 127.0.0.1, or ::1).");
+  if (mode === "local" && !isAllowedLocalModeBaseUrl(baseUrl)) {
+    throw new Error(
+      "Local mode requires localhost or a literal private IP address (e.g. 127.0.0.1 or a " +
+        "Docker-internal address) — hostnames can't be verified without a DNS lookup.",
+    );
   }
   parseSupermemoryBaseUrl(baseUrl);
   return { mode, baseUrl, apiKey };

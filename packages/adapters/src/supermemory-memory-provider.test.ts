@@ -1,6 +1,6 @@
 import type { AdapterContext } from "@rakazo/adapter-kit";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SupermemoryMemoryProvider } from "./supermemory-memory-provider.js";
+import { createSupermemoryProvider, SupermemoryMemoryProvider } from "./supermemory-memory-provider.js";
 
 const context: AdapterContext = {
   operationId: "op-1",
@@ -116,5 +116,36 @@ describe("SupermemoryMemoryProvider", () => {
       "http://localhost:6767/v3/container-tags/rakazo%3Abot-1%3Ahistory%3A2",
       "http://localhost:6767/v3/container-tags/rakazo%3Abot-1%3Ahistory%3A3",
     ]);
+  });
+
+  describe("createSupermemoryProvider local mode base URL", () => {
+    const credentials = { apiKey: "sm_test_key" };
+
+    it("accepts a literal private IP (a compose sidecar's static address)", () => {
+      expect(() =>
+        createSupermemoryProvider({ mode: "local", baseUrl: "http://172.20.0.50:6767" }, credentials),
+      ).not.toThrow();
+    });
+
+    it("accepts localhost", () => {
+      expect(() =>
+        createSupermemoryProvider({ mode: "local", baseUrl: "http://localhost:6767" }, credentials),
+      ).not.toThrow();
+    });
+
+    it("rejects a hostname, since it can't be verified without a DNS lookup", () => {
+      expect(() =>
+        createSupermemoryProvider(
+          { mode: "local", baseUrl: "http://supermemory-local:6767" },
+          credentials,
+        ),
+      ).toThrow(/private IP/);
+    });
+
+    it("rejects a public IP address", () => {
+      expect(() =>
+        createSupermemoryProvider({ mode: "local", baseUrl: "http://8.8.8.8:6767" }, credentials),
+      ).toThrow(/private IP/);
+    });
   });
 });
