@@ -121,6 +121,7 @@ const EXTENSION_MIME_TYPES: Record<string, AttachmentMimeType> = {
   ".markdown": "text/markdown",
   ".csv": "text/csv",
   ".json": "application/json",
+  ".epub": "application/epub+zip",
 };
 
 const MIME_TYPE_EXTENSIONS: Record<AttachmentMimeType, string> = {
@@ -133,6 +134,7 @@ const MIME_TYPE_EXTENSIONS: Record<AttachmentMimeType, string> = {
   "text/markdown": ".md",
   "text/csv": ".csv",
   "application/json": ".json",
+  "application/epub+zip": ".epub",
 };
 
 export function inferAttachmentMimeType(

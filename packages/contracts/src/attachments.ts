@@ -16,6 +16,7 @@ export const ATTACHMENT_FILE_MIME_TYPES = [
   "text/markdown",
   "text/csv",
   "application/json",
+  "application/epub+zip",
 ] as const;
 
 export const ATTACHMENT_ALLOWED_MIME_TYPES = [

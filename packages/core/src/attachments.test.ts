@@ -52,6 +52,7 @@ describe("attachment helpers", () => {
     expect(inferAttachmentMimeType("notes.md", "")).toBe("text/markdown");
     expect(inferAttachmentMimeType("notes.markdown", "text/plain")).toBe("text/markdown");
     expect(inferAttachmentMimeType("notes.md", "application/pdf")).toBe("application/pdf");
+    expect(inferAttachmentMimeType("book.epub", "")).toBe("application/epub+zip");
     expect(inferAttachmentMimeType("archive.zip", "")).toBeNull();
   });
 
